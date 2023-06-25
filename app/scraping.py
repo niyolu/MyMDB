@@ -60,8 +60,8 @@ async def parse_movie(
         "rating": rating
     }
 
-
-@cached(key_builder=lambda func, *args, **kwargs: kwargs["actor"].text)
+# FIXME proably source of dupes
+#@cached(key_builder=lambda func, *args, **kwargs: kwargs["actor"].text)
 async def parse_actor(
         *,
         session: aiohttp.client.ClientSession,
