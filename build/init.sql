@@ -95,24 +95,22 @@ BEGIN
     DECLARE @actor_name VARCHAR(50);
     DECLARE @actor_age INT;
     DECLARE actor_cursor CURSOR FOR
-      SELECT value, ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
+      SELECT value
       FROM STRING_SPLIT(@actor_names, ',');
     DECLARE @actor_ages_table TABLE (
       row_idx INT PRIMARY KEY,
       age INT
     );
-
-    INSERT INTO @actor_ages_table
+    INSERT INTO @actor_ages_table (row_idx, age)
     SELECT idx, age
     FROM split_actor_ages(@actor_ages);
-
     OPEN actor_cursor;
     FETCH NEXT FROM actor_cursor INTO @actor_name;
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
       SELECT @actor_age = age FROM @actor_ages_table WHERE row_idx = @@CURSOR_ROWS;
-
+      
       IF NOT EXISTS (SELECT * FROM actors WHERE name = @actor_name AND age = @actor_age)
       BEGIN
         INSERT INTO actors (name, age)
@@ -134,5 +132,4 @@ BEGIN
     DEALLOCATE actor_cursor;
   END;
 END;
-
 GO
