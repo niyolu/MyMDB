@@ -1,6 +1,6 @@
 import asyncio
 import aiohttp
-from aiocache import Cache, cached
+from aiocache import cached
 
 import bs4 as bs
 from urllib.parse import urljoin
@@ -8,9 +8,10 @@ from urllib.parse import urljoin
 from datetime import date
 import time
 import typing
+from functools import partial
 
 
-MAX_ACTORS = 5 # FIXME maybe like 20
+MAX_ACTORS = 20 # FIXME maybe like 20
 MAX_MOVIES = 250
 SCRAPE_DELAY = (10, 15)
 
@@ -59,7 +60,6 @@ async def parse_movie(
         "rating": rating
     }
 
-# actors_parsed = 0
 
 @cached(key_builder=lambda func, *args, **kwargs: kwargs["actor"].text)
 async def parse_actor(
@@ -82,8 +82,6 @@ async def parse_actor(
             age = -1
         else:
             age = (date.today() - date(y, m, d)).days // 365
-    # global actors_parsed
-    # actors_parsed += 1
     return name, age
 
 
@@ -92,10 +90,8 @@ async def parse_actors(
         actors: bs.element.ResultSet
     ) -> tuple[list[str], list[int]]:
     tasks = []
-    for idx, actor in enumerate(actors):
-            if idx >= MAX_ACTORS:
-                break
-            tasks.append(parse_actor(session=session, actor=actor))
+    parse = partial(parse_actor, session=session)
+    tasks = [parse(actor=actor) for actor in actors[:MAX_ACTORS]]
     names_ages = await asyncio.gather(*tasks)
     return zip(*names_ages)
 
@@ -104,14 +100,9 @@ async def parse_top_movies(n: int = MAX_MOVIES) -> list:
     movies_info = []
     async with aiohttp.ClientSession(headers=headers) as session:
         movies = await get_top_movies(session)
-        tasks = []
-        for idx, movie in enumerate(movies):
-            if idx >= n:
-                break
-            tasks.append(parse_movie(session, movie))
-        print(len(tasks))
+        parse = partial(parse_movie, session=session)
+        tasks = [parse(movie=movie) for movie in movies[:n]]
         movies_info = await asyncio.gather(*tasks)
-    #print(f"{actors_parsed=}")
     return movies_info
 
 
@@ -122,6 +113,10 @@ def run_scraper(
     loop = asyncio.get_event_loop()
     movies = loop.run_until_complete(scraper(*args, **kwargs))
     return movies
+
+
+def scrape_top_movies(n: int = MAX_MOVIES):
+    return run_scraper(parse_top_movies, n)
     
     
 def test():
