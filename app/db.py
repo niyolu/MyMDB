@@ -10,7 +10,7 @@ server = "localhost"
 # server = "127.0.0.1"
 #server = "localhost\sqlexpress"
 port = "1433"
-database = "ExampleDB"
+database = "MyMDB"
 username = "SA"
 password = "Pr0dRdyPw!"
 
@@ -18,7 +18,7 @@ conn_str = (
     fr"DRIVER={driver};"
     fr"SERVER={server};"
     fr"PORT={port};"
-    #fr"DATABASE={database};"
+    fr"DATABASE={database};"
     fr"UID={username};"
     fr"PWD={password}"
 )
@@ -61,7 +61,7 @@ def insert_movie(
     print(call_str)
     cursor.execute(call_str)
     
-def select_all(tablename):
+def select_all(tablename: str):
     cursor.execute(f"SELECT * from {tablename}")
     results = cursor.fetchall()
 
@@ -70,14 +70,29 @@ def select_all(tablename):
         print(row)
 
 def test():
-    names = ['Tim Robbins', 'Morgan Freeman', 'Bob Gunton', 'William Sadler', 'Clancy Brown', 'Gil Bellows', 'Mark Rolston', 'James Whitmore', 'Jeffrey DeMunn', 'Larry Brandenburg', 'Neil Giuntoli', 'Brian Libby', 'David Proval', 'Joseph Ragno', 'Jude Ciccolella', 'Paul McCrane', 'Renee Blaine', 'Scott Mann']
+    names = [
+        'Tim Robbins', 'Morgan Freeman', 'Bob Gunton', 'William Sadler', 'Clancy Brown',
+        'Gil Bellows', 'Mark Rolston', 'James Whitmore', 'Jeffrey DeMunn', 'Larry Brandenburg',
+        'Neil Giuntoli', 'Brian Libby', 'David Proval', 'Joseph Ragno', 'Jude Ciccolella',
+        'Paul McCrane', 'Renee Blaine', 'Scott Mann'
+    ]
     insert_movie(
         title="Die Verurteilten", year=1994, genre="Drama", rating=9.2,
         actor_ages=[30 for x in names], actor_names=names
     )
-    [select_all(tbl) for tbl in ("actors", "movies", "actor_deleted_ratings", "movie_actors")]
+    [select_all(tbl) for tbl in ("actors", "movies", "movie_actors")]
+    
+    names = [
+        'Tim Robbins', 'Morgan Freeman', 'Bob Gunton', 'William Sadler', 'Clancy Brown',
+        'Gil Bellows', 'Mark Rolston', 'James Whitmore', 'Jeffrey DeMunn', 'Larry Brandenburg',
+        'Neil Giuntoli', 'Brian Libby', 'David Proval', 'Joseph Ragno', 'Jude Ciccolella',
+        'Paul McCrane', 'Renee Blaine', 'Scott Mann', "John Doe"
+    ]
+    insert_movie(
+        title="Die Verurteilten2", year=1995, genre="Dramacomedy", rating=1.3,
+        actor_ages=[30 for x in names], actor_names=names
+    )
+    [select_all(tbl) for tbl in ("actors", "movies", "movie_actors")]
 
 if __name__ == "__main__":
-    cursor.execute("print 'hi'")
     test()
-    cnxn.commit()
