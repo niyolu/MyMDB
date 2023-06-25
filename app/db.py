@@ -4,8 +4,6 @@ from typing import List
 # for driver in pyodbc.drivers():
 #     print(driver)
 
-
-
 driver = "SQL Server"
 server = "localhost"
 # server = "127.0.0.1"
@@ -58,7 +56,7 @@ def insert_movie(
             )
     ])
     call_str = f"{{call insert_movie({args})}}"
-    print(call_str)
+    # print(call_str)
     res = cursor.execute(call_str)
     cnxn.commit()
     return res
@@ -67,20 +65,25 @@ def insert_movie(
 def select_all(tablename: str):
     cursor.execute(f"SELECT * from {tablename}")
     results = cursor.fetchall()
-
-    print(f"printing {tablename}")
-    for row in results:
-        print(row)
+    return results
         
         
-def select_all_tables():
+def print_all_tables():
     for tbl in ("actors", "movies", "movie_actors"):
-        select_all(tbl)
+        print("printing table", tbl)
+        print(select_all(tbl))
         
         
+def get_actor_ranking(top=None):
+    cursor.execute("SELECT name, avg_rating from actors ORDER BY avg_rating DESC")
+    return cursor.fetchall()[:top] if top else cursor.fetchall()
 
-        
 
+def get_actor_appearances():
+    cursor.execute("SELECT name, COUNT(*) from actors a join movie_actors ma on a.id = ma.actor_id GROUP BY name ORDER BY COUNT(*) DESC, name DESC")
+    return cursor.fetchall()
+        
+        
 def test():
     names = [
         'Tim Robbins', "Morgan d'Freeman", 'Bob Gunton', 'William Sadler', 'Clancy Brown',
