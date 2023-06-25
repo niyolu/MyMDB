@@ -20,7 +20,7 @@ BEGIN
       SELECT value, ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
       FROM STRING_SPLIT(@actor_names, ',');
     DECLARE @actor_ages_table TABLE (
-      [key] INT PRIMARY KEY,
+      row_idx INT PRIMARY KEY,
       age INT
     );
 
@@ -33,7 +33,7 @@ BEGIN
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
-      SELECT @actor_age = age FROM @actor_ages_table WHERE [key] = @@CURSOR_ROWS;
+      SELECT @actor_age = age FROM @actor_ages_table WHERE row_idx = @@CURSOR_ROWS;
 
       IF NOT EXISTS (SELECT * FROM actors WHERE name = @actor_name AND age = @actor_age)
       BEGIN
