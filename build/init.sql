@@ -5,7 +5,6 @@ GO
 
 USE MyMDB;
 
---tables
 GO
 
 CREATE TABLE movies (
@@ -20,7 +19,8 @@ CREATE TABLE movies (
 CREATE TABLE actors (
     id INT IDENTITY(1,1) PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    age int NOT NULL
+    age int NOT NULL,
+    avg_rating DECIMAL(3, 1) 
 );
 
 
@@ -36,11 +36,8 @@ CREATE TABLE movie_actors (
   FOREIGN KEY (movie_id) REFERENCES movies(id),
   FOREIGN KEY (actor_id) REFERENCES actors(id)
 );
-
 GO
 
--- function split split_actor_ages
-GO
 CREATE FUNCTION split_actor_ages (
   @actor_ages VARCHAR(MAX)
 )
@@ -52,9 +49,6 @@ RETURN
   FROM STRING_SPLIT(@actor_ages, ',', 1)
 );
 
-GO
-
--- function get_actors_for_movie
 GO
 
 CREATE FUNCTION get_actors_for_movie
@@ -69,11 +63,6 @@ BEGIN
   WHERE movie_actors.movie_id = @movie_id;
   RETURN @actor_list;
 END;
-
-GO
-
-
--- stored procedure insert_movie
 GO
 
 CREATE PROCEDURE insert_movie
@@ -133,3 +122,22 @@ BEGIN
   END;
 END;
 GO
+
+CREATE TRIGGER trg_update_avg_rating
+ON movie_actors
+AFTER INSERT
+AS
+BEGIN
+  DECLARE @actor_id INT;
+  SELECT @actor_id = actor_id
+  FROM inserted;
+
+  UPDATE actors
+  SET avg_rating = (
+    SELECT AVG(m.rating)
+    FROM movie_actors ma
+    JOIN movies m ON ma.movie_id = m.id
+    WHERE ma.actor_id = @actor_id
+  )
+  WHERE id = @actor_id;
+END;
