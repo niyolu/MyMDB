@@ -1,3 +1,13 @@
+GO
+CREATE DATABASE MyMDB;
+GO
+
+
+USE MyMDB;
+
+--tables
+GO
+
 CREATE TABLE movies (
   id INT IDENTITY(1,1)  PRIMARY KEY,
   title VARCHAR(50) NOT NULL,
@@ -27,7 +37,10 @@ CREATE TABLE movie_actors (
   FOREIGN KEY (actor_id) REFERENCES actors(id)
 );
 
+GO
 
+-- function split split_actor_ages
+GO
 CREATE FUNCTION split_actor_ages (
   @actor_ages VARCHAR(MAX)
 )
@@ -35,9 +48,33 @@ RETURNS TABLE
 AS
 RETURN
 (
-  SELECT [key], value AS age
-  FROM STRING_SPLIT(@actor_ages, ',')
+  SELECT ordinal as idx, value AS age
+  FROM STRING_SPLIT(@actor_ages, ',', 1)
 );
+
+GO
+
+-- function get_actors_for_movie
+GO
+
+CREATE FUNCTION get_actors_for_movie
+  (@movie_id INT)
+RETURNS VARCHAR(MAX)
+AS
+BEGIN
+  DECLARE @actor_list VARCHAR(MAX);
+  SELECT @actor_list = STRING_AGG(name, ', ')
+  FROM actors
+  JOIN movie_actors ON actors.id = movie_actors.actor_id
+  WHERE movie_actors.movie_id = @movie_id;
+  RETURN @actor_list;
+END;
+
+GO
+
+
+-- stored procedure insert_movie
+GO
 
 CREATE PROCEDURE insert_movie
   @title VARCHAR(50),
@@ -61,12 +98,12 @@ BEGIN
       SELECT value, ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
       FROM STRING_SPLIT(@actor_names, ',');
     DECLARE @actor_ages_table TABLE (
-      [key] INT PRIMARY KEY,
+      row_idx INT PRIMARY KEY,
       age INT
     );
 
     INSERT INTO @actor_ages_table
-    SELECT [key], age
+    SELECT idx, age
     FROM split_actor_ages(@actor_ages);
 
     OPEN actor_cursor;
@@ -74,7 +111,7 @@ BEGIN
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
-      SELECT @actor_age = age FROM @actor_ages_table WHERE [key] = @@CURSOR_ROWS;
+      SELECT @actor_age = age FROM @actor_ages_table WHERE row_idx = @@CURSOR_ROWS;
 
       IF NOT EXISTS (SELECT * FROM actors WHERE name = @actor_name AND age = @actor_age)
       BEGIN
@@ -98,16 +135,4 @@ BEGIN
   END;
 END;
 
-
-CREATE FUNCTION get_actors_for_movie
-  (@movie_id INT)
-RETURNS VARCHAR(MAX)
-AS
-BEGIN
-  DECLARE @actor_list VARCHAR(MAX);
-  SELECT @actor_list = STRING_AGG(name, ', ')
-  FROM actors
-  JOIN movie_actors ON actors.id = movie_actors.actor_id
-  WHERE movie_actors.movie_id = @movie_id;
-  RETURN @actor_list;
-END;
+GO
