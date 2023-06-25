@@ -1,6 +1,6 @@
 # MyMDB
 
-Scraper, DB and analysis-notebook for interacting with [IMDb](https://www.imdb.com/)
+Scraper, DB and analysis-notebook for interacting with [IMDb](https://www.imdb.com/). I read and respected the robots.txt I swear.
 
 ### Installation
 
