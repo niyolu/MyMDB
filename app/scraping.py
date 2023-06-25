@@ -78,7 +78,7 @@ async def parse_actor(
             y = int(y)
             m = get_month_from_ger_str(m)
         except (AttributeError, ValueError) as e:
-            print("actor without (correctly) specified date of birth or bio: ", name, actor_url, e)
+            # print("actor without (correctly) specified date of birth or bio: ", name, actor_url, e)
             age = -1
         else:
             age = (date.today() - date(y, m, d)).days // 365
