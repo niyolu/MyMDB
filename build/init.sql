@@ -70,7 +70,7 @@ BEGIN
     INSERT INTO movies (title, year, genre, rating)
     VALUES (@title, @year, @genre, @rating);
     SELECT @movie_id = SCOPE_IDENTITY();
-    DECLARE @actor_id INT;
+   -- DECLARE @actor_id INT;
     DECLARE @actor_name VARCHAR(50);
     DECLARE @actor_age INT;
 
@@ -98,25 +98,48 @@ BEGIN
     OPEN actor_cursor;
     FETCH NEXT FROM actor_cursor INTO @actor_name, @actor_age;
 
+    -- try to insert into actors or change a broken old record
+    -- actors have the tendency to avoid choosing another ones name but if that
+    -- happens below logic allows for two or more actors where one had a badly
+    -- scraped age now share their associated movies.
     WHILE @@FETCH_STATUS = 0
-    BEGIN    
-      IF NOT EXISTS (SELECT * FROM actors WHERE name = @actor_name AND age = @actor_age)
-      BEGIN
-        INSERT INTO actors (name, age)
-        VALUES (@actor_name, @actor_age);
-        SELECT @actor_id = SCOPE_IDENTITY();
-      END
-      ELSE
-      BEGIN
+    BEGIN
+      DECLARE @actor_id INT = NULL;
+      IF @actor_age <> -1
+      BEGIN -- actor valid
         SELECT @actor_id = id FROM actors WHERE name = @actor_name AND age = @actor_age;
+        IF @actor_id IS NULL -- not found or invalid
+        BEGIN
+          SELECT @actor_id = id FROM actors WHERE name = @actor_name;
+          IF @actor_id IS NULL -- no previous actor found
+          BEGIN
+            INSERT INTO actors (name, age)
+              VALUES (@actor_name, @actor_age);
+              SELECT @actor_id = SCOPE_IDENTITY();
+          END
+          ELSE -- single invalid actor found
+          BEGIN
+            UPDATE actors
+                SET age = @actor_age
+                WHERE id = @actor_id ;
+          END
+        END
       END
-
-      INSERT INTO movie_actors (movie_id, actor_id)
-      VALUES (@movie_id, @actor_id);
-
-      FETCH NEXT FROM actor_cursor INTO @actor_name, @actor_age;
+      ELSE --actor invalid
+        SELECT @actor_id = id FROM actors WHERE name = @actor_name;
+        IF @actor_id IS NULL
+        BEGIN -- previous actor found
+          INSERT INTO actors (name, age)
+            VALUES (@actor_name, @actor_age);
+            SELECT @actor_id = SCOPE_IDENTITY();
+        END
+      END
+      IF @actor_id IS NOT NULL
+      BEGIN
+        INSERT INTO movie_actors (movie_id, actor_id)
+          VALUES (@movie_id, @actor_id);
+      END
     END
-
     CLOSE actor_cursor;
     DEALLOCATE actor_cursor;
   END;
