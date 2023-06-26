@@ -55,7 +55,7 @@ RETURN
 );
 GO
 
-ALTER PROCEDURE insert_movie
+CREATE PROCEDURE insert_movie
   @title VARCHAR(50),
   @year INT,
   @genre VARCHAR(50),
@@ -110,10 +110,11 @@ BEGIN
       SELECT @actor_id = id, @previous_actor_age = age from actors WHERE name = @actor_name;
 
       -- abuse int as bool, valid means age
-      DECLARE @this_valid INT = IIF(@actor_age =-1, 0, 1);
-      DECLARE @previous_valid INT = IIF(@previous_actor_age =-1, 0, 1);
-      DECLARE @previous_exists INT = IIF(@actor_id IS NOT NULL, 0, 1);
-      DECLARE @real_age_mismatch INT = IIF(@this_valid=1 AND @previous_valid=1 AND @actor_age<>@previous_actor_age, 1, 0);
+      DECLARE @this_valid INT = IIF(@actor_age <> -1, 1, 0);
+      DECLARE @previous_valid INT = IIF(@previous_actor_age <> -1, 1, 0);
+      DECLARE @previous_exists INT = IIF(@actor_id IS NOT NULL, 1, 0);
+      DECLARE @real_age_mismatch INT = 
+        IIF(@this_valid=1 AND @previous_valid=1 AND @actor_age <> @previous_actor_age, 1, 0);
 
       IF @previous_exists=0 OR @real_age_mismatch=1
       BEGIN
@@ -129,6 +130,8 @@ BEGIN
       IF @actor_id IS NOT NULL
         INSERT INTO movie_actors (movie_id, actor_id)
           VALUES (@movie_id, @actor_id);
+
+      FETCH NEXT FROM actor_cursor INTO @actor_name, @actor_age;
     END
 
     CLOSE actor_cursor;
