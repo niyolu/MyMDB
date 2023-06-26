@@ -67,6 +67,7 @@ BEGIN
   DECLARE @movie_id INT;
   IF NOT EXISTS (SELECT * FROM movies WHERE title = @title AND year = @year)
   BEGIN
+    print 'inserting movie'
     INSERT INTO movies (title, year, genre, rating)
     VALUES (@title, @year, @genre, @rating);
     SELECT @movie_id = SCOPE_IDENTITY();
@@ -99,13 +100,19 @@ BEGIN
     OPEN actor_cursor;
     FETCH NEXT FROM actor_cursor INTO @actor_name, @actor_age;
 
+    DECLARE @i INT = 0;
+
     -- try to insert into actors or change a broken old record
     -- actors have the tendency to avoid choosing another ones name but if that
     -- happens below logic allows for two or more actors where one had a badly
     -- scraped age now share their associated movies.
     WHILE @@FETCH_STATUS = 0
     BEGIN
-      DECLARE @actor_id INT;
+      print 'i'
+      print @i;
+
+      SET @i = @i + 1;
+      DECLARE @actor_id INT = NULL;
       DECLARE @previous_actor_age INT;
       SELECT @actor_id = id, @previous_actor_age = age from actors WHERE name = @actor_name;
 
@@ -113,23 +120,42 @@ BEGIN
       DECLARE @this_valid INT = IIF(@actor_age <> -1, 1, 0);
       DECLARE @previous_valid INT = IIF(@previous_actor_age <> -1, 1, 0);
       DECLARE @previous_exists INT = IIF(@actor_id IS NOT NULL, 1, 0);
-      DECLARE @real_age_mismatch INT = 
+      DECLARE @real_age_mismatch INT =
         IIF(@this_valid=1 AND @previous_valid=1 AND @actor_age <> @previous_actor_age, 1, 0);
+
+      print 'age,name,prevage'
+      print @actor_age
+      print @actor_name
+      print @previous_actor_age
+
+      print 'declared cases: this_valid previous_valid previous_exists real_age_mismatch'
+      print @this_valid
+      print @previous_valid
+      print @previous_exists
+      print @real_age_mismatch
 
       IF @previous_exists=0 OR @real_age_mismatch=1
       BEGIN
+        print '@previous_exists=0 OR @real_age_mismatch=1 INSERT ACTOR'
         INSERT INTO actors (name, age)
           VALUES (@actor_name, @actor_age);
         SELECT @actor_id = SCOPE_IDENTITY();
       END
-      ELSE IF @this_valid=1 AND @previous_valid=0
+      ELSE IF @this_valid = 1 AND @previous_valid = 0
+      BEGIN
+        print 'IF @this_valid=1 AND @previous_valid=0 UPDATE ACTOR'
         UPDATE actors
           SET age = @actor_age
           WHERE id = @actor_id;
+      END
 
       IF @actor_id IS NOT NULL
+      BEGIN
+          print 'insert movie actors'
         INSERT INTO movie_actors (movie_id, actor_id)
+
           VALUES (@movie_id, @actor_id);
+      END
 
       FETCH NEXT FROM actor_cursor INTO @actor_name, @actor_age;
     END
@@ -159,7 +185,6 @@ ON movie_actors
 AFTER INSERT
 AS
 BEGIN
-print 'triggering'
   DECLARE @actor_id INT;
   SELECT @actor_id = actor_id
   FROM inserted;
