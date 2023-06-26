@@ -55,7 +55,7 @@ RETURN
 );
 GO
 
-CREATE PROCEDURE insert_movie
+ALTER PROCEDURE insert_movie
   @title VARCHAR(50),
   @year INT,
   @genre VARCHAR(50),
@@ -78,6 +78,7 @@ BEGIN
       row_idx INT PRIMARY KEY,
       age INT
     );
+
     INSERT INTO @actor_ages_table (row_idx, age)
     SELECT idx, age
     FROM split_actor_ages(@actor_ages);
@@ -104,45 +105,35 @@ BEGIN
     -- scraped age now share their associated movies.
     WHILE @@FETCH_STATUS = 0
     BEGIN
-      DECLARE @actor_id INT = NULL;
-      IF @actor_age <> -1
-      BEGIN -- actor valid
-        SELECT @actor_id = id FROM actors WHERE name = @actor_name AND age = @actor_age;
-        IF @actor_id IS NULL -- not found or invalid
-        BEGIN
-          SELECT @actor_id = id FROM actors WHERE name = @actor_name;
-          IF @actor_id IS NULL -- no previous actor found
-          BEGIN
-            INSERT INTO actors (name, age)
-              VALUES (@actor_name, @actor_age);
-              SELECT @actor_id = SCOPE_IDENTITY();
-          END
-          ELSE -- single invalid actor found
-          BEGIN
-            UPDATE actors
-                SET age = @actor_age
-                WHERE id = @actor_id ;
-          END
-        END
-      END
-      ELSE --actor invalid
-        SELECT @actor_id = id FROM actors WHERE name = @actor_name;
-        IF @actor_id IS NULL
-        BEGIN -- previous actor found
-          INSERT INTO actors (name, age)
-            VALUES (@actor_name, @actor_age);
-            SELECT @actor_id = SCOPE_IDENTITY();
-        END
-      END
-      IF @actor_id IS NOT NULL
+      DECLARE @actor_id INT;
+      DECLARE @previous_actor_age INT;
+      SELECT @actor_id = id, @previous_actor_age = age from actors WHERE name = @actor_name;
+
+      -- abuse int as bool, valid means age
+      DECLARE @this_valid INT = IIF(@actor_age =-1, 0, 1);
+      DECLARE @previous_valid INT = IIF(@previous_actor_age =-1, 0, 1);
+      DECLARE @previous_exists INT = IIF(@actor_id IS NOT NULL, 0, 1);
+      DECLARE @real_age_mismatch INT = IIF(@this_valid=1 AND @previous_valid=1 AND @actor_age<>@previous_actor_age, 1, 0);
+
+      IF @previous_exists=0 OR @real_age_mismatch=1
       BEGIN
+        INSERT INTO actors (name, age)
+          VALUES (@actor_name, @actor_age);
+        SELECT @actor_id = SCOPE_IDENTITY();
+      END
+      ELSE IF @this_valid=1 AND @previous_valid=0
+        UPDATE actors
+          SET age = @actor_age
+          WHERE id = @actor_id;
+
+      IF @actor_id IS NOT NULL
         INSERT INTO movie_actors (movie_id, actor_id)
           VALUES (@movie_id, @actor_id);
-      END
     END
+
     CLOSE actor_cursor;
     DEALLOCATE actor_cursor;
-  END;
+  END
 END;
 GO
 
