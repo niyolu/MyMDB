@@ -108,8 +108,7 @@ BEGIN
     -- scraped age now share their associated movies.
     WHILE @@FETCH_STATUS = 0
     BEGIN
-      print 'i'
-      print @i;
+      print CONCAT('i', @i);
 
       SET @i = @i + 1;
       DECLARE @actor_id INT = NULL;
@@ -123,27 +122,24 @@ BEGIN
       DECLARE @real_age_mismatch INT =
         IIF(@this_valid=1 AND @previous_valid=1 AND @actor_age <> @previous_actor_age, 1, 0);
 
-      print 'age,name,prevage'
-      print @actor_age
-      print @actor_name
-      print @previous_actor_age
+      print 'age,name,prevage';
+      print @actor_age;
+      print @actor_name;
+      print @previous_actor_age;
 
       print 'declared cases: this_valid previous_valid previous_exists real_age_mismatch'
-      print @this_valid
-      print @previous_valid
-      print @previous_exists
-      print @real_age_mismatch
+      print CONCAT(@this_valid, @previous_valid, @previous_exists, @real_age_mismatch)
 
       IF @previous_exists=0 OR @real_age_mismatch=1
       BEGIN
-        print '@previous_exists=0 OR @real_age_mismatch=1 INSERT ACTOR'
+        print '@previous_exists=0 OR @real_age_mismatch=1 INSERT ACTOR';
         INSERT INTO actors (name, age)
           VALUES (@actor_name, @actor_age);
         SELECT @actor_id = SCOPE_IDENTITY();
       END
       ELSE IF @this_valid = 1 AND @previous_valid = 0
       BEGIN
-        print 'IF @this_valid=1 AND @previous_valid=0 UPDATE ACTOR'
+        print 'IF @this_valid=1 AND @previous_valid=0 UPDATE ACTOR';
         UPDATE actors
           SET age = @actor_age
           WHERE id = @actor_id;
@@ -151,10 +147,13 @@ BEGIN
 
       IF @actor_id IS NOT NULL
       BEGIN
-          print 'insert movie actors'
+          print 'INSERTING MOVIE_ACTORS';
         INSERT INTO movie_actors (movie_id, actor_id)
-
           VALUES (@movie_id, @actor_id);
+      END
+      ELSE
+      BEGIN
+         print 'NOT INSERTING MOVIE_ACTORS';
       END
 
       FETCH NEXT FROM actor_cursor INTO @actor_name, @actor_age;
