@@ -101,6 +101,8 @@ BEGIN
     FETCH NEXT FROM actor_cursor INTO @actor_name, @actor_age;
 
     DECLARE @i INT = 0;
+    DECLARE @actor_id INT = NULL;
+    DECLARE @previous_actor_age INT = NULL;
 
     -- try to insert into actors or change a broken old record
     -- actors have the tendency to avoid choosing another ones name but if that
@@ -111,23 +113,24 @@ BEGIN
       print CONCAT('i', @i);
 
       SET @i = @i + 1;
-      DECLARE @actor_id INT = NULL;
-      DECLARE @previous_actor_age INT;
+      SET @actor_id = NULL;
+      SET @previous_actor_age = NULL;
+      print iif(@actor_id is NULL, '', 'actor id should be null');
       SELECT @actor_id = id, @previous_actor_age = age from actors WHERE name = @actor_name;
 
       -- abuse int as bool, valid means age
       DECLARE @this_valid INT = IIF(@actor_age <> -1, 1, 0);
-      DECLARE @previous_valid INT = IIF(@previous_actor_age <> -1, 1, 0);
       DECLARE @previous_exists INT = IIF(@actor_id IS NOT NULL, 1, 0);
+      DECLARE @previous_valid INT = IIF(@previous_exists=1 AND @previous_actor_age <> -1, 1, 0);
       DECLARE @real_age_mismatch INT =
         IIF(@this_valid=1 AND @previous_valid=1 AND @actor_age <> @previous_actor_age, 1, 0);
 
       print 'age,name,prevage';
       print @actor_age;
       print @actor_name;
-      print @previous_actor_age;
+      print ISNULL(@previous_actor_age, -2);
 
-      print 'declared cases: this_valid previous_valid previous_exists real_age_mismatch'
+      print 'this_valid previous_valid previous_exists real_age_mismatch'
       print CONCAT(@this_valid, @previous_valid, @previous_exists, @real_age_mismatch)
 
       IF @previous_exists=0 OR @real_age_mismatch=1
