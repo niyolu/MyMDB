@@ -15,7 +15,7 @@ def get_movie_dataframe(movies=None):
     
     return pd.DataFrame(
             convert(movies or db.select_all("movies")),
-            columns=["id", "title", "year", "genre", "rating"],
+            columns=["id", "title", "year", "genre", "rating", "budget", "gross_income"],
     )#.set_index(["index"])# .drop(columns=["index"])
     
 
