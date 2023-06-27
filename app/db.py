@@ -35,7 +35,9 @@ def insert_movie(
         genre: str,
         actor_names: list[str],
         actor_ages: list[int],
-        rating: int
+        rating: int,
+        budget: int = None,
+        gross_income: int = None
     ):
     def convert(x):
         if isinstance(x, str):
@@ -43,9 +45,8 @@ def insert_movie(
         if isinstance(x, (int, float)):
             return str(x)
         if isinstance(x, (tuple, list)):
-            return convert(",".join(map(str, x)))
-        else:
-            raise NotImplementedError(f"no impl for type {type(x)}")
+            return convert(",".join(map(str, x)))    
+        raise NotImplementedError(f"no impl for type {type(x)}")
     
     args = ",".join([
         convert(arg) for arg in (
@@ -54,8 +55,11 @@ def insert_movie(
                 genre,
                 actor_names,
                 actor_ages,
-                rating
-            )
+                rating,
+                budget,
+                gross_income
+        )
+        if arg is not None
     ])
     call_str = f"{{call insert_movie({args})}}"
     # print(call_str)
@@ -108,7 +112,8 @@ def test_harcoded():
     ]
     insert_movie(
         title="Die Verurteilten", year=1994, genre="Drama", rating=9.2,
-        actor_ages=[30+idx for idx, x in enumerate(names)], actor_names=names
+        actor_ages=[30+idx for idx, x in enumerate(names)], actor_names=names,
+        #budget=25000000, gross_income=28884504
     )
     [select_all(tbl) for tbl in ("actors", "movies", "movie_actors")]
     
@@ -120,9 +125,10 @@ def test_harcoded():
     ]
     insert_movie(
         title="Die Verurteilten2", year=1995, genre="Dramacomedy", rating=1.3,
-        actor_ages=[30+idx for idx, x in enumerate(names)], actor_names=names
+        actor_ages=[30+idx for idx, x in enumerate(names)], actor_names=names,
+        budget=25000000, gross_income=28884504
     )
-    [select_all(tbl) for tbl in ("actors", "movies", "movie_actors")]
+    print_all_tables()
     assert check_no_duplicates()
     
 def test_pickled():
@@ -141,4 +147,5 @@ def test_pickled():
     assert check_no_duplicates()
 
 if __name__ == "__main__":
-    test_pickled()
+    test_harcoded()
+    # test_pickled()

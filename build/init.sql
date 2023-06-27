@@ -10,7 +10,9 @@ CREATE TABLE movies (
   title VARCHAR(50) NOT NULL,
   year INT NOT NULL,
   genre VARCHAR(50) NOT NULL,
-  rating DECIMAL(3, 1) NOT NULL
+  rating DECIMAL(3, 1) NOT NULL,
+  budget MONEY,
+  gross_income MONEY
 );
 
 
@@ -61,15 +63,17 @@ CREATE PROCEDURE insert_movie
   @genre VARCHAR(50),
   @actor_names VARCHAR(MAX),
   @actor_ages VARCHAR(MAX),
-  @rating DECIMAL(3, 1)
+  @rating DECIMAL(3, 1),
+  @budget MONEY = NULL,
+  @gross_income MONEY = NULL
 AS
 BEGIN
   DECLARE @movie_id INT;
   IF NOT EXISTS (SELECT * FROM movies WHERE title = @title AND year = @year)
   BEGIN
     print 'inserting movie'
-    INSERT INTO movies (title, year, genre, rating)
-    VALUES (@title, @year, @genre, @rating);
+    INSERT INTO movies (title, year, genre, rating, budget, gross_income)
+    VALUES (@title, @year, @genre, @rating, @budget, @gross_income);
     SELECT @movie_id = SCOPE_IDENTITY();
    -- DECLARE @actor_id INT;
     DECLARE @actor_name VARCHAR(50);
