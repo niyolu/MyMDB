@@ -24,8 +24,10 @@ conn_str = (
 
 print(f"connecting to db via conn_str: {conn_str}")
 
+
 cnxn = pyodbc.connect(conn_str)
 cursor = cnxn.cursor()
+
 
 def insert_movie(
         title: str,
@@ -82,9 +84,22 @@ def get_actor_ranking(top=None):
 def get_actor_appearances():
     cursor.execute("SELECT name, COUNT(*) from actors a join movie_actors ma on a.id = ma.actor_id GROUP BY name ORDER BY COUNT(*) DESC, name DESC")
     return cursor.fetchall()
+
+
+def get_actor_appearances_ratings_age():
+    cursor.execute("SELECT name, age, COUNT(*) AS appearances, avg_rating FROM actors a JOIN movie_actors ma ON a.id = ma.actor_id WHERE age <> -1 GROUP BY name, age, avg_rating ORDER BY avg_rating DESC, COUNT(*) DESC, name DESC;")
+    return cursor.fetchall()
+
+
+def check_no_duplicates() -> bool:
+    cursor.execute("SELECT name, COUNT(*) from actors GROUP BY NAME HAVING COUNT(*) > 1")
+    rows = cursor.fetchall()
+    for row in rows:
+        print(row)
+    return not rows
+
         
-        
-def test():
+def test_harcoded():
     names = [
         'Tim Robbins', "Morgan d'Freeman", 'Bob Gunton', 'William Sadler', 'Clancy Brown',
         'Gil Bellows', 'Mark Rolston', 'James Whitmore', 'Jeffrey DeMunn', 'Larry Brandenburg',
@@ -108,6 +123,22 @@ def test():
         actor_ages=[30+idx for idx, x in enumerate(names)], actor_names=names
     )
     [select_all(tbl) for tbl in ("actors", "movies", "movie_actors")]
+    assert check_no_duplicates()
+    
+def test_pickled():
+    import pickle
+
+    # with open("./moviedata/top100.pkl", "rb") as f:
+    #     movies = pickle.load(f)
+    # print(f"inserting {len(movies)}")
+    # for movie in movies:
+    #     try:
+    #         insert_movie(**movie)
+    #     except:
+    #         print("issue at", movie)
+            
+    print_all_tables()
+    assert check_no_duplicates()
 
 if __name__ == "__main__":
-    test()
+    test_pickled()
