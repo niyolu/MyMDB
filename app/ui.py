@@ -19,7 +19,7 @@ def get_file_options():
         zip(files, sizes_str),
         key=lambda x: int(x[0][3:-4])
     )
-    files_sizes_alligned = [f"{a.ljust(max_f + lf+ls-max_f-max_f)} ({b.rjust(max_s)})" for idx, (lf, ls, (a,b)) in enumerate(zip(len_f, len_s, files_sizes))]
+    files_sizes_alligned = [f"{a.ljust(max_f)} ({b.rjust(max_s)})" for idx, (lf, ls, (a,b)) in enumerate(zip(len_f, len_s, files_sizes))]
     print(*files_sizes_alligned,sep="\n")
     return files_sizes_alligned
 
@@ -65,7 +65,7 @@ def init_ui(movies=None):
         n = num_movies_slider.value
         playlist = playlist_toggles.value
         url = url_textbox.value
-        file = file_select.value
+        file = file_select.value.split(" ")[0]
         source = ["web", "file"][tab.selected_index]
         strip_file = strip_file_checkbox.value
         if source == "web":
