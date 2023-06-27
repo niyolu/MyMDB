@@ -21,8 +21,8 @@ URL_CHARTS = urljoin(URL_BASE, "chart/top")
 URL_ROULETTE = urljoin(URL_BASE, "list/ls091294718/")
 
 headers = {
-    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
-    #"user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
+    # "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
+    "user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
     "accept-language": "de-de"
 }
 
@@ -35,6 +35,7 @@ async def aggregate_safely(tasks):
             print('Got an exception:', e)
         else:
             container.append(results)
+        # container.append(await coroutine)
     return container
 
 
@@ -70,13 +71,33 @@ async def parse_movie(
     rating = float(movie.find_next_sibling().find("strong").text.replace(",", "."))
     movie_url = urljoin(URL_BASE, movie.find("a")["href"])
 
-    async with session.get(movie_url, timeout=aiohttp.ClientTimeout(total=60)) as movie_response:
+    #async with session.get(movie_url, timeout=aiohttp.ClientTimeout(total=60)) as movie_response:
+    async with session.get(movie_url) as movie_response:
         soup = bs.BeautifulSoup(await movie_response.text(), "html.parser")
         genre = soup.find("a", class_="ipc-chip ipc-chip--on-baseAlt").text
         actors = soup.find_all("a", {"data-testid": "title-cast-item__actor"})
-        budget = soup.find("li", {"data-testid": "title-boxoffice-budget"}).find("li").text.split()[0]
-        gross_income = soup.find("li", {"data-testid": "title-boxoffice-cumulativeworldwidegross"}).find("li").text.split()[0]
-        print(budget, gross_income)
+        try:
+            budget = int(
+                soup
+                .find("li", {"data-testid": "title-boxoffice-budget"})
+                .find("li")
+                .text.split()[0].replace(".", "")
+            )
+        except Exception as e:
+            print(e)
+            print(f"happened with budget in {title}: {movie_url}")
+            budget = None
+        try:
+            gross_income = int(
+                soup
+                .find("li", {"data-testid": "title-boxoffice-cumulativeworldwidegross"})
+                .find("li")
+                .text.split()[0].replace(".", "")
+            )
+        except Exception as e:
+            print(e)
+            print(f"happened with gross_income in {title}: {movie_url}")
+            gross_income = None
         actor_names, actor_ages = await parse_actors(session, actors)
 
     return {
@@ -86,8 +107,8 @@ async def parse_movie(
         "actor_names": actor_names,
         "actor_ages": actor_ages,
         "rating": rating,
+        "budget": budget,
         "gross_income": gross_income,
-        "budget": budget
     }
 
 # FIXME proably source of dupes
@@ -97,10 +118,11 @@ async def parse_actor(
         session: aiohttp.client.ClientSession,
         actor: bs.element.Tag
     ) -> tuple:
-    time.sleep(random.random()*.5)
+    time.sleep(random.random() * 2 if random.random()<0.5 else random.random() * 10)
     name = actor.text
     actor_url = urljoin(URL_BASE, actor["href"])
-    async with session.get(actor_url, timeout=aiohttp.ClientTimeout(total=60)) as actor_response:
+    #async with session.get(actor_url, timeout=aiohttp.ClientTimeout(total=60)) as actor_response:
+    async with session.get(actor_url) as actor_response:
         soup = bs.BeautifulSoup(await actor_response.text(), "html.parser")
         try:
             date_of_birth = soup.find("li", {"data-testid": "nm_pd_bl"}).find("a").text
@@ -109,7 +131,7 @@ async def parse_actor(
             y = int(y)
             m = get_month_from_ger_str(m)
         except (AttributeError, ValueError) as e:
-            # print("actor without (correctly) specified date of birth or bio: ", name, actor_url, e)
+            print("actor without (correctly) specified date of birth or bio: ", name, actor_url, e)
             age = -1
         else:
             age = (date.today() - date(y, m, d)).days // 365
@@ -159,7 +181,7 @@ def test():
     print(movies)
     print(f"script took {time.perf_counter()-start:.2f}s to parse {len(movies)} movies")
     if movies:
-        if len(movies) == n or input("fetched {n}/{len(movies)} movies, continue? y/n").lower() == "y":
+        if len(movies) == n or input(f"fetched {len(movies)}/{n} movies, continue? y/n\n").lower() == "y":
             with open(f"top{n}.pkl", "wb") as f: 
                 pickle.dump(movies, f)
 
