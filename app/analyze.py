@@ -2,6 +2,8 @@ import pandas as pd
 import db
 import matplotlib.pyplot as plt
 
+#import warnings
+#warnings.filterwarnings("ignore", message=r"UserWarning: A NumPy version >=1.17.3 and <1.25.0 is required for this version of SciPy (detected version 1.25.0warnings.warn(f\"A NumPy version >={np_minversion} and <{np_maxversion}\"")
 
 def convert(rows):
     if rows and not isinstance(rows[0], list):
@@ -80,7 +82,7 @@ def get_movie_feature_dataframe():
     df["budget"] = df["budget"].apply(pd.to_numeric)
     df["gross_income"] = df["gross_income"].apply(pd.to_numeric)
     df["rating"] = df["rating"].apply(pd.to_numeric)
-    print(df.dtypes)
+   # print(df.dtypes)
     return df
 
     
@@ -105,7 +107,7 @@ def scatter_actor_features(df):
     plt.plot(x,y, ".")
     plt.show()
     
-def scattermatrix_actors(df):
+def scattermatrix(df):
     pd.plotting.scatter_matrix(df, alpha=0.4, diagonal="kde")
     plt.show()
     
@@ -125,11 +127,11 @@ def test_create():
 
 def test_plot():
     df_actor_features = get_actor_feature_dataframe()
-    scatter_actor_features(df_actor_features)
-    scattermatrix_actors(df_actor_features)
+    scattermatrix(df_actor_features)
+    scattermatrix(df_actor_features)
 
 if __name__ == "__main__":
-    test_create()
+    #test_create()
     test_plot()
     
     

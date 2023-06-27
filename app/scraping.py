@@ -23,8 +23,8 @@ URL_ROULETTE = urljoin(URL_BASE, "list/ls091294718/")
 
 
 headers = {
-    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
-    #"user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
+    #"user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
+    "user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
     "accept-language": "de-de"
 }
 
@@ -34,7 +34,8 @@ async def aggregate_safely(tasks):
         try:
             results = await coroutine
         except Exception as e:
-            print('Got an exception:', e)
+            pass
+            # print('Got an exception:', e)
         else:
             container.append(results)
         # container.append(await coroutine)
@@ -86,8 +87,8 @@ async def parse_movie(
                 .text.split()[0].replace(".", "")
             )
         except Exception as e:
-            print(e)
-            print(f"couldnt retrieve budget from {title} at {movie_url}")
+            # print(e)
+            # print(f"couldnt retrieve budget from {title} at {movie_url}")
             budget = None
         try:
             gross_income = int(
@@ -97,8 +98,8 @@ async def parse_movie(
                 .text.split()[0].replace(".", "")
             )
         except Exception as e:
-            print(e)
-            print(f"couldnt retrieve gross_income from {title} at {movie_url}")
+            # print(e)
+            # print(f"couldnt retrieve gross_income from {title} at {movie_url}")
             gross_income = None
         actor_names, actor_ages = await parse_actors(session, actors)
 
@@ -133,7 +134,7 @@ async def parse_actor(
             y = int(y)
             m = get_month_from_ger_str(m)
         except (AttributeError, ValueError) as e:
-            print("actor without (correctly) specified date of birth or bio: ", name, actor_url, e)
+            # print("actor without (correctly) specified date of birth or bio: ", name, actor_url, e)
             age = -1
         else:
             age = (date.today() - date(y, m, d)).days // 365

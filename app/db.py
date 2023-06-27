@@ -120,7 +120,9 @@ def test_harcoded():
         actor_ages=[30+idx for idx, x in enumerate(names)], actor_names=names,
         #budget=25000000, gross_income=28884504
     )
-    [select_all(tbl) for tbl in ("actors", "movies", "movie_actors")]
+    
+
+    print_all_tables()
     
     names = [
         'Tim Robbins', 'Morgan Freeman', 'Bob Gunton', 'William Sadler', 'Clancy Brown',
@@ -150,6 +152,7 @@ def test_pickled():
             
     print_all_tables()
     assert check_no_duplicates()
+
 
 if __name__ == "__main__":
     test_harcoded()

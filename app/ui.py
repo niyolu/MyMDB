@@ -12,16 +12,18 @@ DATA_DIR = "./moviedata/"
 
 def get_file_options():
     files = os.listdir(DATA_DIR)
+    max_f = max(map(len, files))
     sizes = [os.path.getsize(os.path.join(DATA_DIR, file)) for file in files]
-    sizes_str = [f"{s//1024}kb" for s in sizes]
-    len_f, len_s = list(map(len, files)), list(map(len, sizes_str))
-    max_f, max_s = max(len_f), max(len_s)
-    files_sizes = sorted(
-        zip(files, sizes_str),
-        key=lambda x: int(re.findall("\d+",x[0])[0])
-    )
-    files_sizes_alligned = [f"{a.ljust(max_f)} ({b.rjust(max_s)})" for idx, (lf, ls, (a,b)) in enumerate(zip(len_f, len_s, files_sizes))]
-    return files_sizes_alligned
+    return [f"{f} {s//1024}kb" for f, s in zip(files, sizes)]
+    # sizes_str = [f"{s//1024}kb" for s in sizes]
+    # len_f, len_s = list(map(len, files)), list(map(len, sizes_str))
+    # max_f, max_s = max(len_f), max(len_s)
+    # files_sizes = sorted(
+    #     zip(files, sizes_str),
+    #     key=lambda x: int(re.findall("\d+",x[0])[0])
+    # )
+    # files_sizes_alligned = [f"{a.ljust(max_f)} ({b.rjust(max_s)})" for idx, (lf, ls, (a,b)) in enumerate(zip(len_f, len_s, files_sizes))]
+    # return files_sizes_alligned
 
 def scrape_url(url):
     print("scraping url", url)
@@ -36,7 +38,7 @@ def init_ui(movies=None):
     )
     url_textbox = widgets.Text(
         value="https://www.imdb.com",
-        description="Source",
+        description="Custom Src",
     )
     scrape_tab = widgets.VBox(children=[
         playlist_toggles, url_textbox])
