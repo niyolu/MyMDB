@@ -3,6 +3,7 @@ import ipywidgets as widgets
 from scraping import scrape_top_movies
 import pickle
 import sys
+import re
 
 
 DATA_DIR = "./app/moviedata/"
@@ -17,10 +18,9 @@ def get_file_options():
     max_f, max_s = max(len_f), max(len_s)
     files_sizes = sorted(
         zip(files, sizes_str),
-        key=lambda x: int(x[0][3:-4])
+        key=lambda x: int(re.findall("\d+",x[0])[0])
     )
     files_sizes_alligned = [f"{a.ljust(max_f)} ({b.rjust(max_s)})" for idx, (lf, ls, (a,b)) in enumerate(zip(len_f, len_s, files_sizes))]
-    print(*files_sizes_alligned,sep="\n")
     return files_sizes_alligned
 
 def scrape_url(url):

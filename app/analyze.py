@@ -58,6 +58,31 @@ def get_actor_feature_dataframe():
     )
     df["avg_rating"] = df["avg_rating"].apply(pd.to_numeric)
     return df
+
+
+def get_actor_feature_dataframe():
+    features = db.get_actor_appearances_ratings_age()
+    df = pd.DataFrame(
+        convert(features),
+        columns = ["name", "age", "appearances", "avg_rating"]
+    )
+    df["avg_rating"] = df["avg_rating"].apply(pd.to_numeric)
+    return df
+
+
+def get_movie_feature_dataframe():
+    features = db.get_movie_yr_budget_income_rating()
+    df = pd.DataFrame(
+        convert(features),
+        columns = ["year", "budget", "gross_income", "rating"]
+    )
+    
+    df["budget"] = df["budget"].apply(pd.to_numeric)
+    df["gross_income"] = df["gross_income"].apply(pd.to_numeric)
+    df["rating"] = df["rating"].apply(pd.to_numeric)
+    print(df.dtypes)
+    return df
+
     
 def get_summary_dataframe(df_actors=None, df_movie_actors=None, df_movies=None):
     return (
@@ -71,11 +96,6 @@ def get_summary_dataframe(df_actors=None, df_movie_actors=None, df_movies=None):
     ).drop(["id_x", "id_y"], axis=1)
 
 
-# plot number of occurences as barplot
-# plot distribution of average ratings with suitable bin
-# plot average rating per year
-# maybe some ML on (age, avg_rating) -> occurences
-# scatterplot matrix
 def scatter_actor_features(df):
     x = df["appearances"]
     y = df["avg_rating"]
@@ -89,11 +109,10 @@ def scattermatrix_actors(df):
     pd.plotting.scatter_matrix(df, alpha=0.4, diagonal="kde")
     plt.show()
     
-def inference():
-    # do some linear regression on the stuff scatterplot made look promising
-    pass
 
 def test_create():
+    print(get_movie_feature_dataframe())
+    raise
     print(get_actors_dataframe())
     print(get_movie_dataframe())
     print(get_movie_actors_dataframe())
@@ -101,7 +120,7 @@ def test_create():
     # print(movie_actors_df)
     # #print(movie_actors_df[movie_actors_df["actor_id"] == 64])
     print(get_summary_dataframe())
-    # print(get_actor_feature_dataframe())
+    print(get_actor_feature_dataframe())
 
 
 def test_plot():
@@ -110,5 +129,11 @@ def test_plot():
     scattermatrix_actors(df_actor_features)
 
 if __name__ == "__main__":
-    #test_create()
+    test_create()
     test_plot()
+    
+    
+
+# plot number of occurences as barplot
+# plot distribution of average ratings with suitable bin
+# plot average rating per year

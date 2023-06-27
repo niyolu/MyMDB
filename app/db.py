@@ -95,6 +95,11 @@ def get_actor_appearances_ratings_age():
     return cursor.fetchall()
 
 
+def get_movie_yr_budget_income_rating():
+    cursor.execute("SELECT year, budget, gross_income, rating FROM movies")
+    return cursor.fetchall()
+
+
 def check_no_duplicates() -> bool:
     cursor.execute("SELECT name, COUNT(*) from actors GROUP BY NAME HAVING COUNT(*) > 1")
     rows = cursor.fetchall()

@@ -14,15 +14,17 @@ import random
 
 MAX_ACTORS = 20 # FIXME maybe like 20
 MAX_MOVIES = 250
-SCRAPE_DELAY = (10, 15)
+# SCRAPE_DELAY = (10, 15)
+SCRAPE_DELAY = (0.0, 0.0)
 
 URL_BASE = "https://www.imdb.com/"
 URL_CHARTS = urljoin(URL_BASE, "chart/top")
 URL_ROULETTE = urljoin(URL_BASE, "list/ls091294718/")
 
+
 headers = {
-    # "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
-    "user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
+    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
+    #"user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
     "accept-language": "de-de"
 }
 
@@ -85,7 +87,7 @@ async def parse_movie(
             )
         except Exception as e:
             print(e)
-            print(f"happened with budget in {title}: {movie_url}")
+            print(f"couldnt retrieve budget from {title} at {movie_url}")
             budget = None
         try:
             gross_income = int(
@@ -96,7 +98,7 @@ async def parse_movie(
             )
         except Exception as e:
             print(e)
-            print(f"happened with gross_income in {title}: {movie_url}")
+            print(f"couldnt retrieve gross_income from {title} at {movie_url}")
             gross_income = None
         actor_names, actor_ages = await parse_actors(session, actors)
 
@@ -118,7 +120,7 @@ async def parse_actor(
         session: aiohttp.client.ClientSession,
         actor: bs.element.Tag
     ) -> tuple:
-    time.sleep(random.random() * 2 if random.random()<0.5 else random.random() * 10)
+    time.sleep(random.random() * (SCRAPE_DELAY[1] - SCRAPE_DELAY[0]) + SCRAPE_DELAY[0])
     name = actor.text
     actor_url = urljoin(URL_BASE, actor["href"])
     #async with session.get(actor_url, timeout=aiohttp.ClientTimeout(total=60)) as actor_response:
