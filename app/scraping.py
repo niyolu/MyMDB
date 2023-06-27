@@ -9,14 +9,16 @@ from datetime import date
 import time
 import typing
 from functools import partial
+import random
 
 
 MAX_ACTORS = 20 # FIXME maybe like 20
 MAX_MOVIES = 250
 SCRAPE_DELAY = (10, 15)
 
-url_base = "https://www.imdb.com/"
-url_charts = urljoin(url_base, "chart/top")
+URL_BASE = "https://www.imdb.com/"
+URL_CHARTS = urljoin(URL_BASE, "chart/top")
+URL_ROULETTE = urljoin(URL_BASE, "list/ls091294718/")
 
 headers = {
     "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
@@ -24,16 +26,39 @@ headers = {
     "accept-language": "de-de"
 }
 
+async def aggregate_safely(tasks):
+    container = []
+    for coroutine in asyncio.as_completed(tasks):
+        try:
+            results = await coroutine
+        except Exception as e:
+            print('Got an exception:', e)
+        else:
+            container.append(results)
+    return container
+
 
 def get_month_from_ger_str(m_str: str):
     return 1 + "Januar,Februar,März,April,Mai,Juni,Juli,August,September,Oktober,November,Dezember".split(",").index(m_str)
 
 
-async def get_top_movies(session: aiohttp.client.ClientSession) -> bs.element.ResultSet:
-    async with session.get(url_charts) as response:
+async def get_top_movies(
+        session: aiohttp.client.ClientSession,
+        n: int = MAX_MOVIES
+    ) -> bs.element.ResultSet:
+    async with session.get(URL_CHARTS) as response:
         soup = bs.BeautifulSoup(await response.text(), "html.parser")
         movies = soup.select('td.titleColumn')
-        return movies
+        return movies[:n]
+    
+async def get_random_movies(
+        session: aiohttp.client.ClientSession,
+        n: int = MAX_MOVIES
+    ) -> bs.element.ResultSet:
+    async with session.get(URL_ROULETTE) as response:
+        soup = bs.BeautifulSoup(await response.text(), "html.parser")
+        movies = soup.select('td.titleColumn')
+        return movies[:n]
 
 
 async def parse_movie(
@@ -43,12 +68,15 @@ async def parse_movie(
     title = movie.find("a").text
     year = int(movie.find("span", {"class": "secondaryInfo"}).text.strip("()"))
     rating = float(movie.find_next_sibling().find("strong").text.replace(",", "."))
-    movie_url = urljoin(url_base, movie.find("a")["href"])
+    movie_url = urljoin(URL_BASE, movie.find("a")["href"])
 
-    async with session.get(movie_url) as movie_response:
+    async with session.get(movie_url, timeout=aiohttp.ClientTimeout(total=60)) as movie_response:
         soup = bs.BeautifulSoup(await movie_response.text(), "html.parser")
         genre = soup.find("a", class_="ipc-chip ipc-chip--on-baseAlt").text
         actors = soup.find_all("a", {"data-testid": "title-cast-item__actor"})
+        budget = soup.find("li", {"data-testid": "title-boxoffice-budget"}).find("li").text.split()[0]
+        gross_income = soup.find("li", {"data-testid": "title-boxoffice-cumulativeworldwidegross"}).find("li").text.split()[0]
+        print(budget, gross_income)
         actor_names, actor_ages = await parse_actors(session, actors)
 
     return {
@@ -57,19 +85,22 @@ async def parse_movie(
         "genre": genre,
         "actor_names": actor_names,
         "actor_ages": actor_ages,
-        "rating": rating
+        "rating": rating,
+        "gross_income": gross_income,
+        "budget": budget
     }
 
 # FIXME proably source of dupes
-#@cached(key_builder=lambda func, *args, **kwargs: kwargs["actor"].text)
+#@cached(key_builder=lambda *args, **kwargs: kwargs["actor"].text)
 async def parse_actor(
         *,
         session: aiohttp.client.ClientSession,
         actor: bs.element.Tag
     ) -> tuple:
+    time.sleep(random.random()*.5)
     name = actor.text
-    actor_url = urljoin(url_base, actor["href"])
-    async with session.get(actor_url) as actor_response:
+    actor_url = urljoin(URL_BASE, actor["href"])
+    async with session.get(actor_url, timeout=aiohttp.ClientTimeout(total=60)) as actor_response:
         soup = bs.BeautifulSoup(await actor_response.text(), "html.parser")
         try:
             date_of_birth = soup.find("li", {"data-testid": "nm_pd_bl"}).find("a").text
@@ -92,18 +123,18 @@ async def parse_actors(
     tasks = []
     parse = partial(parse_actor, session=session)
     tasks = [parse(actor=actor) for actor in actors[:MAX_ACTORS]]
-    names_ages = await asyncio.gather(*tasks)
+    names_ages = await aggregate_safely(tasks)
     return zip(*names_ages)
 
 
 async def parse_top_movies(n: int = MAX_MOVIES) -> list:
-    movies_info = []
     async with aiohttp.ClientSession(headers=headers) as session:
-        movies = await get_top_movies(session)
+        movies = await get_top_movies(session, n)
+        if not movies:
+            return []
         parse = partial(parse_movie, session=session)
-        tasks = [parse(movie=movie) for movie in movies[:n]]
-        movies_info = await asyncio.gather(*tasks)
-    return movies_info
+        tasks = [parse(movie=movie) for movie in movies]
+        return await aggregate_safely(tasks)
 
 
 def run_scraper(
@@ -115,7 +146,7 @@ def run_scraper(
     return movies
 
 
-def scrape_top_movies(n: int = MAX_MOVIES):
+def scrape_top_movies(n: int = MAX_MOVIES) -> list:
     return run_scraper(parse_top_movies, n)
     
     
